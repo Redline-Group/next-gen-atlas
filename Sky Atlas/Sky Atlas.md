@@ -44462,19 +44462,25 @@ The address of the Freezer Multisig on the Ethereum Mainnet is `0x1924b6990B63c5
 
 ###### A.6.1.1.5.2.6.1.2.1.2.2.3.2 - Required Number Of Signers [Core]  <!-- UUID: b1b34a90-ead4-4e45-8a88-72c1149f716b -->
 
-The Freezer Multisig currently has a 2/4 signing requirement.
+The Freezer Multisig currently has a 2/5 signing requirement.
 
 ###### A.6.1.1.5.2.6.1.2.1.2.2.3.3 - Signers [Core]  <!-- UUID: cac6b239-3d5f-4014-98a2-df082c1c6cdb -->
 
-The signers of the Freezer Multisig are four (4) addresses controlled by Obex.
+The signers of the Freezer Multisig are three (3) addresses controlled by Operational GovOps Soter Labs, one (1) address controlled by Operational Facilitator Redline Facilitation Group, and one (1) address controlled by Obex.
 
 ###### A.6.1.1.5.2.6.1.2.1.2.2.3.4 - Usage Standards [Core]  <!-- UUID: 0535c9cd-dd37-4a76-815d-836ad1dd1974 -->
 
-The usage standards for the Freezer Multisig will be specified in a future iteration of the Obex Artifact.
+The signers of the Freezer Multisig should exercise their authority to freeze the Obex Liquidity Layer in the event that Obex is not complying with rules regarding Risk Capital or Asset Liability Management, or in the event of another emergency.
+
+Each action executed by the Freezer Multisig, including any function calls and their parameters, must be reported to the Sky community within a reasonable time frame through a post on the Sky Forum.
 
 ###### A.6.1.1.5.2.6.1.2.1.2.2.3.5 - Modification [Core]  <!-- UUID: 247ea87b-5649-4c92-aebe-5a5fc45c2c75 -->
 
-The modification of signers for the Freezer Multisig will be specified in a future iteration of the Obex Artifact.
+Modification of the signers of the Freezer Multisig must be approved through an Atlas Edit Proposal.
+
+The only exceptions to this are if: 1) a signer self-reports a loss of access to their private key due to any reason; or 2) a signer explicitly expresses their wish to be removed as a signer. In both cases, the signer is required to communicate the loss of access to their private key, or the wish to be removed as a signer, in the form of a public Sky Forum post. The specific signer should be replaced as soon as possible.
+
+Any changes to the Multisig signers that do not fall within the two exceptions listed above, or that have not been ratified by Sky Governance, should be questioned immediately and treated as malicious. Where malicious activity is suspected, the Facilitators must prepare an expedited Executive Vote so that Sky Governance can vote on removing external security access from the Multisig.
 
 ###### A.6.1.1.5.2.6.1.2.1.3 - Total Risk Capital (TRC) Management [Core]  <!-- UUID: f65883db-3b01-4c25-be16-d05c8b95494a -->
 
