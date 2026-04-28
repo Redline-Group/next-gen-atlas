@@ -44454,7 +44454,7 @@ Operational GovOps Soter Labs can change the signers of the Core Operator Relaye
 
 ###### A.6.1.1.5.2.6.1.2.1.2.2.3 - Freezer Multisig [Core]  <!-- UUID: 49e6c234-7102-43e0-80a6-fb14e259e1f7 -->
 
-The Freezer Multisig has the `FREEZER_ROLE` as defined in [A.6.1.1.5.2.6.1.2.2.1.1.4 - Freezer Role](afcfa58a-fc3d-4f5d-9bc8-bf40e7fa3ec7) and is controlled by Obex.
+The Freezer Multisig has the `FREEZER_ROLE` as defined in [A.6.1.1.5.2.6.1.2.2.1.1.4 - Freezer Role](afcfa58a-fc3d-4f5d-9bc8-bf40e7fa3ec7).
 
 ###### A.6.1.1.5.2.6.1.2.1.2.2.3.1 - Address [Core]  <!-- UUID: 6624912c-1cf6-443c-925f-ba1451a1644f -->
 
