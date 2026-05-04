@@ -43234,19 +43234,27 @@ The name of the Agent is Obex.
 
 The address of Obex’s SubProxy Account on the Ethereum Mainnet is `0x8be042581f581E3620e29F213EA8b94afA1C8071`.
 
-###### A.6.1.1.5.2.1.1.3.1.1.3 - Genesis Account [Core]  <!-- UUID: d77522ec-0987-474d-87b3-9377f107c9b6 -->
+###### A.6.1.1.5.2.1.1.3.1.1.3 - StarGuard Contract [Core]  <!-- UUID: 509c948c-1ddd-4bd2-8343-357f7981d296 -->
+
+The address of Obex’s StarGuard contract on the Ethereum Mainnet is `0x987f1C31f9935e9926555BcFB76516bb2EcEccaD`.
+
+###### A.6.1.1.5.2.1.1.3.1.1.3.1 - StarGuard Max Delay [Core]  <!-- UUID: b037c4fd-759b-4ea1-9b6b-3f9f86391f60 -->
+
+The Obex StarGuard `maxDelay` is seven (7) days.
+
+###### A.6.1.1.5.2.1.1.3.1.1.4 - Genesis Account [Core]  <!-- UUID: d77522ec-0987-474d-87b3-9377f107c9b6 -->
 
 The address of Obex’s Genesis Account will be specified in a future iteration of the Obex Artifact.
 
-###### A.6.1.1.5.2.1.1.3.1.1.4 - Custom Instance Parameters [Core]  <!-- UUID: 6b501d73-1151-46a1-9994-1e51d25729da -->
+###### A.6.1.1.5.2.1.1.3.1.1.5 - Custom Instance Parameters [Core]  <!-- UUID: 6b501d73-1151-46a1-9994-1e51d25729da -->
 
 The documents herein define the custom parameters of the Single Instance of the Agent Creation Primitive, if any.
 
-###### A.6.1.1.5.2.1.1.3.1.1.4.1 - Rubicon [Core]  <!-- UUID: 57b0ac97-ddd8-424c-a407-6f6ab91a3806 -->
+###### A.6.1.1.5.2.1.1.3.1.1.5.1 - Rubicon [Core]  <!-- UUID: 57b0ac97-ddd8-424c-a407-6f6ab91a3806 -->
 
 Rubicon is the Prime Foundation associated with Obex. Its mandate is to support the development, growth, and adoption of Obex.
 
-###### A.6.1.1.5.2.1.1.3.1.1.4.2 - Treadstone [Core]  <!-- UUID: 44a4e626-eb16-44cb-8502-9133c97c0773 -->
+###### A.6.1.1.5.2.1.1.3.1.1.5.2 - Treadstone [Core]  <!-- UUID: 44a4e626-eb16-44cb-8502-9133c97c0773 -->
 
 Treadstone is the development company that provides services to Rubicon.
 
