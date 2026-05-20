@@ -50673,11 +50673,11 @@ The subtrees for Instances of the Prime Transformation Primitive with `Suspende
 
 The Instances of the Prime Transformation Primitive with `Active` Status are stored herein.
 
-###### A.6.1.2.2.2.1.2.2 - Completed Instances [Core]  <!-- UUID: ea1fc101-2d2d-449f-9933-d770d265b7db -->
+###### A.6.1.2.2.2.1.2.3 - Completed Instances [Core]  <!-- UUID: ea1fc101-2d2d-449f-9933-d770d265b7db -->
 
 The Instances of the Prime Transformation Primitive with `Completed` Status are contained herein.
 
-###### A.6.1.2.2.2.1.2.3 - In Progress Invocations [Core]  <!-- UUID: 1538e819-f3a8-4ed2-a32c-5a500094bb36 -->
+###### A.6.1.2.2.2.1.2.4 - In Progress Invocations [Core]  <!-- UUID: 1538e819-f3a8-4ed2-a32c-5a500094bb36 -->
 
 Because the Prime Transformation Primitive is deployed solely for the one-time transformation of the Agent, no further Instances of the Primitive can be Invoked.
 
@@ -50813,7 +50813,7 @@ The subtrees for archived Invocations and Instances of the Agent Token Primitive
 
 The subtrees for failed Invocations of the Agent Token Primitive are stored here.
 
-###### A.6.1.2.2.2.1.4.1.5.1.1 - Suspended Instances [Core]  <!-- UUID: 25c18e9c-01e1-41c6-9d2e-15bf98e80d8b -->
+###### A.6.1.2.2.2.1.4.1.5.1.2 - Suspended Instances [Core]  <!-- UUID: 25c18e9c-01e1-41c6-9d2e-15bf98e80d8b -->
 
 The subtrees for Instances of the Agent Token Primitive with `Suspended` Status are stored here.
 
