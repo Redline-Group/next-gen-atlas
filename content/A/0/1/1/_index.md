@@ -1,7 +1,7 @@
 ---
 type: index
 path: content/A/0/1/1
-childCount: 52
+childCount: 54
 ---
 
 # Contents
@@ -58,3 +58,5 @@ childCount: 52
 - [A.0.1.1.50 - Operational Executor Facilitator](50/document.md)
 - [A.0.1.1.51 - Core Council Executor Facilitator](51/document.md)
 - [A.0.1.1.52 - Sky Primitives](52/document.md)
+- [A.0.1.1.53 - Conformance](53/document.md)
+- [A.0.1.1.54 - Independent Governance](54/document.md)

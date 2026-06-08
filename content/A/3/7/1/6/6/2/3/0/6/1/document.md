@@ -12,10 +12,11 @@ childType: active_data
 The current Phased-Out Genesis Capital for each Genesis Agent is:
 
 - Spark - 0 USDS
+- Grove - 0 USDS
 - Obex - 0 USDS
 - Skybase - 0 USDS
 - Core Council Executor Agent 1 - 0 USDS
 - Keel - 0 USDS
-- Launch Agent 6 - 0 USDS
+- Osero - 0 USDS
 - Amatsu - 0 USDS
 - Ozone - 0 USDS
