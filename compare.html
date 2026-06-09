@@ -8,6 +8,8 @@
   <!-- diff2html (major-pinned for stability) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3/bundles/css/diff2html.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/diff2html@3/bundles/js/diff2html-ui.min.js"></script>
+  <!-- jsdiff: composes the full-Atlas diff client-side from each branch's Sky Atlas.md -->
+  <script src="https://cdn.jsdelivr.net/npm/diff@5/dist/diff.min.js"></script>
 
   <style>
     :root { color-scheme: light dark; }
@@ -37,7 +39,11 @@
     #status.error { color: #cf222e; }
     #summary { margin: .6rem 0 1rem; font-size: .9rem; }
     #summary .gh { float: right; }
-    #diff { margin-top: 1rem; }
+    .section { margin-top: 1.6rem; }
+    .section > h2 { font-size: 1.05rem; margin: 0 0 .2rem; }
+    .section > .note { margin: .1rem 0 .6rem; }
+    .note.warn { color: #9a6700; }
+    @media (prefers-color-scheme: dark) { .note.warn { color: #d4a72c; } }
     .swap { background: none; border: 1px solid #d0d7de; color: inherit; padding: .35rem .6rem; }
     .swap:hover { background: #f6f8fa; }
     @media (prefers-color-scheme: dark) {
@@ -56,7 +62,8 @@
   <h1>Sky Atlas — side-by-side branch diff</h1>
   <p class="meta">Paste a GitHub branch URL for each side (e.g.
     <code>https://github.com/sky-ecosystem/next-gen-atlas/tree/main</code>). The comparison is encoded in
-    this page's URL, so it can be bookmarked and shared. Both branches must belong to the same fork network.</p>
+    this page's URL, so it can be bookmarked and shared. Both branches must belong to the same fork network.
+    The full composed <code>Sky Atlas.md</code> diff is shown first, with the individual file changes below.</p>
 
   <form id="form" onsubmit="return onCompare(event)">
     <div class="row">
@@ -81,7 +88,17 @@
 
   <div id="status"></div>
   <div id="summary"></div>
-  <div id="diff"></div>
+
+  <div id="composed-section" class="section" hidden>
+    <h2>Composed Atlas document</h2>
+    <p class="note meta" id="composed-note"></p>
+    <div id="composed-diff"></div>
+  </div>
+
+  <div id="files-section" class="section" hidden>
+    <h2 id="files-heading">Individual file changes</h2>
+    <div id="files-diff"></div>
+  </div>
 
   <p class="meta" style="margin-top:2rem">
     <a href="index.html">&larr; Back to index</a>
@@ -154,22 +171,21 @@ function setStatus(msg, isError) {
   s.className = isError ? "error" : "";
 }
 
-let lastDiff = null; // cache so the view toggle re-renders without refetching
+// Path of the composed full-Atlas document within the repo.
+const COMPOSED_PATH = "Sky Atlas/Sky Atlas.md";
 
-function render(diffText, view) {
-  const target = $("diff");
-  target.innerHTML = "";
-  if (!diffText || !diffText.trim()) {
-    setStatus("No differences — the two branches are identical (or the compare contains no file changes).");
-    $("summary").innerHTML = "";
-    return;
-  }
+// Cache so the view toggle re-renders without refetching.
+let lastComposedDiff = null; // unified diff string, "" (identical), or null (unavailable)
+let lastFilesDiff = null;    // unified diff string of the individual files
+
+function renderDiff2html(targetEl, diffText, view) {
+  targetEl.innerHTML = "";
   // Match diff2html's theme to the OS so backgrounds + text always contrast.
   // Syntax highlighting is intentionally off: the content is plain Atlas markdown,
   // and without a highlight.js theme the token spans inherit the page text color,
   // producing illegible light-gray-on-green.
   const dark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  const ui = new Diff2HtmlUI(target, diffText, {
+  const ui = new Diff2HtmlUI(targetEl, diffText, {
     drawFileList: true,
     matching: "lines",
     outputFormat: view === "line-by-line" ? "line-by-line" : "side-by-side",
@@ -182,12 +198,81 @@ function render(diffText, view) {
   ui.draw();
 }
 
+// Split a unified diff into per-file chunks and drop the given path
+// (the composed document is shown in its own section above, not repeated here).
+function stripFileFromDiff(unifiedDiff, path) {
+  if (!unifiedDiff) return "";
+  const chunks = unifiedDiff.split(/(?=^diff --git )/m);
+  return chunks.filter((c) => !c.startsWith(`diff --git a/${path} `)).join("");
+}
+
+// Fetch the composed Sky Atlas.md for a ref from raw.githubusercontent (CORS-enabled,
+// not subject to the API rate limit). Returns the text, or null if the ref doesn't track it.
+async function fetchComposed(ref) {
+  const url =
+    `https://raw.githubusercontent.com/${ref.owner}/${ref.repo}/${ref.ref}/` +
+    COMPOSED_PATH.split("/").map(encodeURIComponent).join("/");
+  const res = await fetch(url);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Could not fetch composed Atlas for ${ref.owner}/${ref.repo}@${ref.ref} (HTTP ${res.status})`);
+  return await res.text();
+}
+
+// Build a unified diff between two composed documents using jsdiff.
+function buildComposedDiff(baseText, headText, baseLabel, headLabel) {
+  const sp = Diff.structuredPatch(COMPOSED_PATH, COMPOSED_PATH, baseText, headText, baseLabel, headLabel, { context: 3 });
+  if (!sp.hunks.length) return ""; // identical
+  let out = `diff --git a/${COMPOSED_PATH} b/${COMPOSED_PATH}\n--- a/${COMPOSED_PATH}\n+++ b/${COMPOSED_PATH}\n`;
+  for (const h of sp.hunks) {
+    out += `@@ -${h.oldStart},${h.oldLines} +${h.newStart},${h.newLines} @@\n`;
+    out += h.lines.join("\n") + "\n";
+  }
+  return out;
+}
+
+function renderAll(view) {
+  // Composed Atlas document (top)
+  const cSec = $("composed-section");
+  const cNote = $("composed-note");
+  if (lastComposedDiff === null) {
+    cSec.hidden = false;
+    $("composed-diff").innerHTML = "";
+    cNote.className = "note warn";
+  } else if (lastComposedDiff === "") {
+    cSec.hidden = false;
+    $("composed-diff").innerHTML = "";
+    cNote.className = "note meta";
+    cNote.textContent = "No changes in the composed Atlas document.";
+  } else {
+    cSec.hidden = false;
+    cNote.className = "note meta";
+    if (!cNote.textContent) cNote.textContent = `Full diff of ${COMPOSED_PATH}, composed from each branch.`;
+    renderDiff2html($("composed-diff"), lastComposedDiff, view);
+  }
+
+  // Individual file changes (below)
+  const fSec = $("files-section");
+  if (lastFilesDiff && lastFilesDiff.trim()) {
+    fSec.hidden = false;
+    renderDiff2html($("files-diff"), lastFilesDiff, view);
+  } else {
+    fSec.hidden = false;
+    $("files-diff").innerHTML = "";
+  }
+}
+
 // ---- main compare ------------------------------------------------------
 async function runCompare(baseRef, headRef, view) {
   try {
     setStatus("Resolving branches…");
-    $("diff").innerHTML = "";
     $("summary").innerHTML = "";
+    $("composed-section").hidden = true;
+    $("files-section").hidden = true;
+    $("composed-diff").innerHTML = "";
+    $("files-diff").innerHTML = "";
+    $("composed-note").textContent = "";
+    lastComposedDiff = null;
+    lastFilesDiff = null;
     await resolveDefaultBranch(baseRef);
     await resolveDefaultBranch(headRef);
 
@@ -200,9 +285,16 @@ async function runCompare(baseRef, headRef, view) {
     const basehead = `${baseRef.ref}...${headSpec}`;
     const apiUrl = `https://api.github.com/repos/${baseRef.owner}/${baseRef.repo}/compare/${basehead}`;
     const ghUrl = `https://github.com/${baseRef.owner}/${baseRef.repo}/compare/${basehead}`;
+    const baseLabel = `${baseRef.owner}/${baseRef.repo}@${baseRef.ref}`;
+    const headLabel = `${headRef.owner}/${headRef.repo}@${headRef.ref}`;
 
-    setStatus("Fetching diff from GitHub…");
-    const res = await fetch(apiUrl, { headers: { Accept: "application/vnd.github.diff" } });
+    // Fetch the per-file compare diff and both composed documents in parallel.
+    setStatus("Fetching diffs…");
+    const [res, baseComposed, headComposed] = await Promise.all([
+      fetch(apiUrl, { headers: { Accept: "application/vnd.github.diff" } }),
+      fetchComposed(baseRef),
+      fetchComposed(headRef),
+    ]);
 
     if (res.status === 404) {
       throw new Error(
@@ -220,19 +312,36 @@ async function runCompare(baseRef, headRef, view) {
     }
     if (!res.ok) throw new Error(`GitHub API error: HTTP ${res.status}`);
 
-    const diffText = await res.text();
-    lastDiff = diffText;
+    const compareDiff = await res.text();
+    // Individual file diffs, with the composed document removed (shown on top instead).
+    lastFilesDiff = stripFileFromDiff(compareDiff, COMPOSED_PATH);
 
-    const files = (diffText.match(/^diff --git /gm) || []).length;
+    // Composed full-Atlas diff (top section).
+    setStatus("Composing Atlas diff…");
+    if (baseComposed === null || headComposed === null) {
+      lastComposedDiff = null;
+      const missing = [
+        baseComposed === null ? `base (${baseLabel})` : null,
+        headComposed === null ? `compare (${headLabel})` : null,
+      ].filter(Boolean).join(" and ");
+      $("composed-note").textContent =
+        `Cannot build the composed diff: ${missing} does not track ${COMPOSED_PATH}. ` +
+        `Use a branch that commits the composed document (e.g. a "composed" snapshot branch) on that side. ` +
+        `The individual file changes are shown below.`;
+    } else {
+      lastComposedDiff = buildComposedDiff(baseComposed, headComposed, baseRef.ref, headRef.ref);
+    }
+
+    const files = (lastFilesDiff.match(/^diff --git /gm) || []).length;
+    $("files-heading").textContent = `Individual file changes${files ? ` (${files})` : ""}`;
     $("summary").innerHTML =
       `<span class="gh"><a href="${ghUrl}" target="_blank" rel="noopener">Open on GitHub &rarr;</a></span>` +
-      `<b>${baseRef.owner}/${baseRef.repo}@${baseRef.ref}</b> … ` +
-      `<b>${headRef.owner}/${headRef.repo}@${headRef.ref}</b>` +
-      (files ? ` &middot; ${files} file${files === 1 ? "" : "s"} changed` : "");
+      `<b>${baseLabel}</b> … <b>${headLabel}</b>`;
     setStatus("");
-    render(diffText, view);
+    renderAll(view);
   } catch (err) {
-    lastDiff = null;
+    lastComposedDiff = null;
+    lastFilesDiff = null;
     setStatus(err.message || String(err), true);
   }
 }
@@ -256,16 +365,16 @@ function swapSides() {
   const b = $("base").value;
   $("base").value = $("head").value;
   $("head").value = b;
-  if (lastDiff !== null) onCompare();
+  if (lastFilesDiff !== null || lastComposedDiff !== null) onCompare();
 }
 
 // re-render on view toggle (no refetch)
 document.querySelectorAll('input[name=view]').forEach((el) =>
   el.addEventListener("change", () => {
     const p = readParams();
-    if (lastDiff !== null) {
+    if (lastFilesDiff !== null || lastComposedDiff !== null) {
       writeParams(p.base, p.head, currentView());
-      render(lastDiff, currentView());
+      renderAll(currentView());
     }
   })
 );
