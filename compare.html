@@ -164,17 +164,22 @@ function render(diffText, view) {
     $("summary").innerHTML = "";
     return;
   }
+  // Match diff2html's theme to the OS so backgrounds + text always contrast.
+  // Syntax highlighting is intentionally off: the content is plain Atlas markdown,
+  // and without a highlight.js theme the token spans inherit the page text color,
+  // producing illegible light-gray-on-green.
+  const dark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
   const ui = new Diff2HtmlUI(target, diffText, {
     drawFileList: true,
     matching: "lines",
     outputFormat: view === "line-by-line" ? "line-by-line" : "side-by-side",
-    highlight: true,
+    highlight: false,
+    colorScheme: dark ? "dark" : "light",
     fileListToggle: true,
     fileListStartVisible: false,
     synchronisedScroll: true,
   });
   ui.draw();
-  ui.highlightCode();
 }
 
 // ---- main compare ------------------------------------------------------
