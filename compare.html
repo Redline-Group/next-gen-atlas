@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sky Atlas — branch diff</title>
+
+  <!-- diff2html (major-pinned for stability) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html@3/bundles/css/diff2html.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/diff2html@3/bundles/js/diff2html-ui.min.js"></script>
+
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+           margin: 0; line-height: 1.5; color: #1f2328; background: #fff; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1.4rem 1.2rem 4rem; }
+    h1 { font-size: 1.3rem; margin: .2rem 0 1rem; }
+    a { color: #0969da; }
+    code { background: #f3f4f6; padding: .1em .35em; border-radius: 4px; font-size: .9em; }
+    form { border: 1px solid #d0d7de; border-radius: 10px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+    .row { display: grid; grid-template-columns: 90px 1fr; gap: .5rem .7rem; align-items: center; margin-bottom: .6rem; }
+    .row label { font-weight: 600; font-size: .9rem; }
+    .row input[type=text] { width: 100%; box-sizing: border-box; padding: .5rem .6rem;
+           border: 1px solid #d0d7de; border-radius: 6px; font: inherit; font-size: .9rem; background: #fff; color: inherit; }
+    .controls { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; margin-top: .4rem; }
+    button { font: inherit; font-weight: 600; padding: .5rem 1.1rem; border: 1px solid #1f883d;
+             background: #1f883d; color: #fff; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #1a7f37; }
+    .seg { display: inline-flex; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; }
+    .seg label { padding: .45rem .8rem; cursor: pointer; font-size: .85rem; }
+    .seg input { display: none; }
+    .seg input:checked + span { background: #0969da; color: #fff; }
+    .seg span { display: inline-block; padding: .45rem .8rem; margin: -.45rem -.8rem; }
+    .meta { color: #57606a; font-size: .85rem; }
+    .hint { color: #57606a; font-size: .8rem; grid-column: 2; margin-top: -.3rem; }
+    #status { margin: 1rem 0; font-size: .95rem; }
+    #status.error { color: #cf222e; }
+    #summary { margin: .6rem 0 1rem; font-size: .9rem; }
+    #summary .gh { float: right; }
+    #diff { margin-top: 1rem; }
+    .swap { background: none; border: 1px solid #d0d7de; color: inherit; padding: .35rem .6rem; }
+    .swap:hover { background: #f6f8fa; }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e6edf3; background: #0d1117; }
+      a { color: #2f81f7; }
+      code { background: #161b22; }
+      form, .seg, .row input[type=text], .swap { border-color: #30363d; }
+      .row input[type=text] { background: #0d1117; }
+      .swap:hover { background: #161b22; }
+      .meta, .hint { color: #8b949e; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sky Atlas — side-by-side branch diff</h1>
+  <p class="meta">Paste a GitHub branch URL for each side (e.g.
+    <code>https://github.com/sky-ecosystem/next-gen-atlas/tree/main</code>). The comparison is encoded in
+    this page's URL, so it can be bookmarked and shared. Both branches must belong to the same fork network.</p>
+
+  <form id="form" onsubmit="return onCompare(event)">
+    <div class="row">
+      <label for="base">Base</label>
+      <input type="text" id="base" placeholder="https://github.com/owner/repo/tree/branch  (or owner/repo@branch)" />
+      <div class="hint">The "before" side — what you're comparing against.</div>
+    </div>
+    <div class="row">
+      <label for="head">Compare</label>
+      <input type="text" id="head" placeholder="https://github.com/owner/repo/tree/branch  (or owner/repo@branch)" />
+      <div class="hint">The "after" side — the branch whose changes you want to see.</div>
+    </div>
+    <div class="controls">
+      <button type="submit">Compare &rarr;</button>
+      <button type="button" class="swap" onclick="swapSides()">⇅ Swap</button>
+      <span class="seg">
+        <label><input type="radio" name="view" value="side-by-side" checked /><span>Side&#8209;by&#8209;side</span></label>
+        <label><input type="radio" name="view" value="line-by-line" /><span>Line&#8209;by&#8209;line</span></label>
+      </span>
+    </div>
+  </form>
+
+  <div id="status"></div>
+  <div id="summary"></div>
+  <div id="diff"></div>
+
+  <p class="meta" style="margin-top:2rem">
+    <a href="index.html">&larr; Back to index</a>
+  </p>
+</div>
+
+<script>
+"use strict";
+
+// ---- ref parsing -------------------------------------------------------
+// Accepts:
+//   https://github.com/OWNER/REPO/tree/BRANCH        (branch may contain slashes)
+//   https://github.com/OWNER/REPO                     (default branch resolved via API)
+//   OWNER/REPO@BRANCH
+//   OWNER/REPO
+function parseRef(input) {
+  if (!input) return null;
+  let s = input.trim().replace(/^https?:\/\/(www\.)?github\.com\//i, "");
+  s = s.replace(/[?#].*$/, "");
+  let m;
+  // OWNER/REPO@BRANCH
+  m = s.match(/^([^\/\s]+)\/([^\/@\s]+)@(.+)$/);
+  if (m) return { owner: m[1], repo: m[2].replace(/\.git$/, ""), ref: m[3] };
+  // OWNER/REPO/tree/BRANCH (or /commit|/commits|/blob -> treat trailing as ref/path root)
+  m = s.match(/^([^\/\s]+)\/([^\/\s]+)\/(?:tree|commits?)\/(.+)$/);
+  if (m) return { owner: m[1], repo: m[2].replace(/\.git$/, ""), ref: decodeURIComponent(m[3]) };
+  // OWNER/REPO  (no ref -> resolve default branch later)
+  m = s.match(/^([^\/\s]+)\/([^\/\s]+)\/?$/);
+  if (m) return { owner: m[1], repo: m[2].replace(/\.git$/, ""), ref: null };
+  return null;
+}
+
+function refToUrl(r) {
+  return r.ref
+    ? `https://github.com/${r.owner}/${r.repo}/tree/${r.ref}`
+    : `https://github.com/${r.owner}/${r.repo}`;
+}
+
+async function resolveDefaultBranch(r) {
+  if (r.ref) return r;
+  const res = await fetch(`https://api.github.com/repos/${r.owner}/${r.repo}`);
+  if (!res.ok) throw new Error(`Could not resolve ${r.owner}/${r.repo} (HTTP ${res.status})`);
+  const data = await res.json();
+  r.ref = data.default_branch || "main";
+  return r;
+}
+
+// ---- state in URL ------------------------------------------------------
+function readParams() {
+  const p = new URLSearchParams(location.search);
+  return { base: p.get("base") || "", head: p.get("head") || "", view: p.get("view") || "side-by-side" };
+}
+function writeParams(baseUrl, headUrl, view) {
+  const p = new URLSearchParams();
+  p.set("base", baseUrl);
+  p.set("head", headUrl);
+  p.set("view", view);
+  history.replaceState(null, "", "?" + p.toString());
+}
+function currentView() {
+  const el = document.querySelector('input[name=view]:checked');
+  return el ? el.value : "side-by-side";
+}
+
+// ---- DOM helpers -------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+function setStatus(msg, isError) {
+  const s = $("status");
+  s.textContent = msg || "";
+  s.className = isError ? "error" : "";
+}
+
+let lastDiff = null; // cache so the view toggle re-renders without refetching
+
+function render(diffText, view) {
+  const target = $("diff");
+  target.innerHTML = "";
+  if (!diffText || !diffText.trim()) {
+    setStatus("No differences — the two branches are identical (or the compare contains no file changes).");
+    $("summary").innerHTML = "";
+    return;
+  }
+  const ui = new Diff2HtmlUI(target, diffText, {
+    drawFileList: true,
+    matching: "lines",
+    outputFormat: view === "line-by-line" ? "line-by-line" : "side-by-side",
+    highlight: true,
+    fileListToggle: true,
+    fileListStartVisible: false,
+    synchronisedScroll: true,
+  });
+  ui.draw();
+  ui.highlightCode();
+}
+
+// ---- main compare ------------------------------------------------------
+async function runCompare(baseRef, headRef, view) {
+  try {
+    setStatus("Resolving branches…");
+    $("diff").innerHTML = "";
+    $("summary").innerHTML = "";
+    await resolveDefaultBranch(baseRef);
+    await resolveDefaultBranch(headRef);
+
+    const sameRepo =
+      baseRef.owner.toLowerCase() === headRef.owner.toLowerCase() &&
+      baseRef.repo.toLowerCase() === headRef.repo.toLowerCase();
+    // GitHub compare uses three-dot (merge-base) semantics, matching the web UI.
+    // refs are passed literally so branch names with slashes work.
+    const headSpec = sameRepo ? headRef.ref : `${headRef.owner}:${headRef.ref}`;
+    const basehead = `${baseRef.ref}...${headSpec}`;
+    const apiUrl = `https://api.github.com/repos/${baseRef.owner}/${baseRef.repo}/compare/${basehead}`;
+    const ghUrl = `https://github.com/${baseRef.owner}/${baseRef.repo}/compare/${basehead}`;
+
+    setStatus("Fetching diff from GitHub…");
+    const res = await fetch(apiUrl, { headers: { Accept: "application/vnd.github.diff" } });
+
+    if (res.status === 404) {
+      throw new Error(
+        "GitHub returned 404. Check the owner/repo/branch names. " +
+        "Cross-repo comparison only works when both repos are forks of the same upstream."
+      );
+    }
+    if (res.status === 403) {
+      const remaining = res.headers.get("x-ratelimit-remaining");
+      throw new Error(
+        remaining === "0"
+          ? "GitHub API rate limit reached (60 requests/hour for anonymous use). Try again later."
+          : "GitHub returned 403 (forbidden)."
+      );
+    }
+    if (!res.ok) throw new Error(`GitHub API error: HTTP ${res.status}`);
+
+    const diffText = await res.text();
+    lastDiff = diffText;
+
+    const files = (diffText.match(/^diff --git /gm) || []).length;
+    $("summary").innerHTML =
+      `<span class="gh"><a href="${ghUrl}" target="_blank" rel="noopener">Open on GitHub &rarr;</a></span>` +
+      `<b>${baseRef.owner}/${baseRef.repo}@${baseRef.ref}</b> … ` +
+      `<b>${headRef.owner}/${headRef.repo}@${headRef.ref}</b>` +
+      (files ? ` &middot; ${files} file${files === 1 ? "" : "s"} changed` : "");
+    setStatus("");
+    render(diffText, view);
+  } catch (err) {
+    lastDiff = null;
+    setStatus(err.message || String(err), true);
+  }
+}
+
+// ---- event handlers ----------------------------------------------------
+function onCompare(ev) {
+  if (ev) ev.preventDefault();
+  const baseRef = parseRef($("base").value);
+  const headRef = parseRef($("head").value);
+  if (!baseRef || !headRef) {
+    setStatus("Enter a valid GitHub branch URL (or owner/repo@branch) on both sides.", true);
+    return false;
+  }
+  const view = currentView();
+  writeParams(refToUrl(baseRef), refToUrl(headRef), view);
+  runCompare(baseRef, headRef, view);
+  return false;
+}
+
+function swapSides() {
+  const b = $("base").value;
+  $("base").value = $("head").value;
+  $("head").value = b;
+  if (lastDiff !== null) onCompare();
+}
+
+// re-render on view toggle (no refetch)
+document.querySelectorAll('input[name=view]').forEach((el) =>
+  el.addEventListener("change", () => {
+    const p = readParams();
+    if (lastDiff !== null) {
+      writeParams(p.base, p.head, currentView());
+      render(lastDiff, currentView());
+    }
+  })
+);
+
+// ---- init from URL -----------------------------------------------------
+(function init() {
+  const p = readParams();
+  if (p.base) $("base").value = p.base;
+  if (p.head) $("head").value = p.head;
+  const viewEl = document.querySelector(`input[name=view][value="${p.view}"]`);
+  if (viewEl) viewEl.checked = true;
+  if (p.base && p.head) {
+    const baseRef = parseRef(p.base);
+    const headRef = parseRef(p.head);
+    if (baseRef && headRef) runCompare(baseRef, headRef, p.view);
+  }
+})();
+</script>
+</body>
+</html>
