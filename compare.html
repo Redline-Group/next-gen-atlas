@@ -379,15 +379,20 @@ document.querySelectorAll('input[name=view]').forEach((el) =>
   })
 );
 
+// Default base: a composed snapshot of root main, so the composed-document
+// diff works out of the box. Users can change it.
+const DEFAULT_BASE = "https://github.com/Redline-Group/next-gen-atlas/tree/composed-main";
+
 // ---- init from URL -----------------------------------------------------
 (function init() {
   const p = readParams();
-  if (p.base) $("base").value = p.base;
+  const base = p.base || DEFAULT_BASE;
+  $("base").value = base;
   if (p.head) $("head").value = p.head;
   const viewEl = document.querySelector(`input[name=view][value="${p.view}"]`);
   if (viewEl) viewEl.checked = true;
-  if (p.base && p.head) {
-    const baseRef = parseRef(p.base);
+  if (base && p.head) {
+    const baseRef = parseRef(base);
     const headRef = parseRef(p.head);
     if (baseRef && headRef) runCompare(baseRef, headRef, p.view);
   }
