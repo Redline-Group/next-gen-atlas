@@ -1,5 +1,5 @@
 ---
-id: 384d29b0-8621-4dfa-a6c3-23b1397a9712
+id: 491d7d0-3e0b-4b6f-a9a7-25b19b6f7117
 docNo: A.6.1.2.2.2.1.1.3.1.1.5.2
 name: Soter Labs -
 type: Core
